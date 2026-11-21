@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <title>小Q包张哼哼的星露谷生日小屋 · 生日快乐</title>
+  <meta name="description" content="一间为小Q包张哼哼布置的温馨可爱星露谷像素风可交互生日小屋，推开木门探索惊喜吧！" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/config.js" defer></script>
+  <script src="js/audio.js" defer></script>
+  <script src="js/particles.js" defer></script>
+  <script src="js/room-map.js" defer></script>
+  <script src="js/wardrobe.js" defer></script>
+  <script src="js/cooking.js" defer></script>
+  <script src="js/pets.js" defer></script>
+  <script src="js/room-art.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/game.js" defer></script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="game-canvas" aria-label="小Q包张哼哼的星露谷生日小屋游戏画面"></canvas>
+
+    <!-- 顶部状态栏 -->
+    <header id="hud">
+      <button id="hud-date-card" class="hud-date-card" type="button" title="点击查看季节日历">
+        <span id="hud-season" class="hud-season-pill">秋季</span>
+        <span id="hud-date-text">
+          <span id="hud-date-prefix" class="hud-date-prefix">11月20日 · </span><span id="hud-name-text">小Q包张哼哼</span>
+        </span>
+      </button>
+
+      <div class="hud-actions">
+        <button id="hud-quest-btn" class="hud-btn" type="button" title="查看特别委托 (快捷键 Q)">
+          📜 <span id="hud-quest-label">委托 0/7</span>
+        </button>
+        <button id="hud-music-btn" class="hud-btn" type="button" title="开关背景音乐 (快捷键 M)">
+          ♪ 音乐
+        </button>
+        <button id="hud-help-btn" class="hud-btn" type="button" title="查看操作说明">
+          ?
+        </button>
+      </div>
+    </header>
+
+    <!-- 当前房间指示条、平面图入口与人物动作菜单 -->
+    <div id="room-subbar">
+      <button id="room-banner" class="hud-room-banner" type="button" title="查看六室房屋平面导览图 (快捷键 Tab)">
+        <span id="room-banner-name">🎂 温馨派对客厅</span>
+        <span class="room-banner-map">🗺️ 平面图</span>
+      </button>
+      <button id="birthday-menu-btn" class="pose-btn birthday-menu-btn" type="button" title="打开生日菜单（来信、照片墙、礼物盒、蛋糕）">🎂 生日菜单</button>
+      <button id="pose-btn" class="pose-btn" type="button" title="让小Q包张哼哼做动作">💃 动作</button>
+      <div id="pose-menu" class="sd-box hidden" role="menu">
+        <button class="pose-item" data-emote="wave" type="button">👋 开心挥手</button>
+        <button class="pose-item" data-emote="spin" type="button">🌀 360° 转圈</button>
+        <button class="pose-item" data-emote="love" type="button">💖 发射爱心</button>
+        <button class="pose-item" data-emote="dance" type="button">🎵 开心摇摆</button>
+      </div>
+    </div>
+
+    <!-- 操作说明小提示 -->
+    <aside id="controls-toast" class="sd-box hidden">
+      <div><strong>操作指南</strong></div>
+      <div>• 电脑：WASD / 方向键走动，E / 空格互动</div>
+      <div>• 手机：左下角摇杆走动，或直接点地面 / 家具 / 木门</div>
+      <div>• 串门：走进墙边木门或点左上角「平面图」切换 7 间小屋</div>
+      <div>• 快捷键：Q 委托清单，M 切换音乐，Tab 平面图</div>
+    </aside>
+
+    <!-- 桌面端靠近交互提示 -->
+    <button id="interact-prompt" class="hidden" type="button">
+      按 <b>E</b> / <b>空格</b> 或点击：<span id="interact-prompt-text"></span>
+    </button>
+
+    <!-- 房间互动动作状态栏（睡觉/坐电脑椅/弹钢琴/窝云朵椅等） -->
+    <div id="activity-bar" class="activity-bar hidden" role="status">
+      <span id="activity-label">🛏️ 正在休息中…</span>
+      <button id="activity-extra-btn" class="activity-extra-btn hidden" type="button">打开</button>
+      <button id="activity-exit-btn" class="activity-exit-btn" type="button">起身走动</button>
+    </div>
+
+    <!-- 手机端虚拟摇杆与互动按钮 -->
+    <div id="touch-controls">
+      <div id="joystick-base" class="joystick-base" aria-label="方向摇杆">
+        <div id="joystick-knob" class="joystick-knob"></div>
+      </div>
+      <button id="touch-interact-btn" class="touch-interact-btn hidden" type="button">
+        ✨ 互动
+      </button>
+    </div>
+
+    <!-- 开场欢迎门扉 -->
+    <section id="welcome-overlay" aria-label="欢迎进入生日小屋">
+      <div class="welcome-mountains"></div>
+      <div class="welcome-card sd-box">
+        <div class="welcome-avatars">
+          <img class="welcome-portrait" src="assets/protagonist-portrait.png" alt="小Q包张哼哼头像" />
+          <img class="welcome-junimo" src="assets/sprites/junimo.gif" alt="祝尼魔" />
+        </div>
+        <div id="welcome-badge" class="welcome-badge">致 小Q包张哼哼 的生日特别委托</div>
+        <h1 id="welcome-title">小Q包张哼哼的生日小屋</h1>
+        <p id="welcome-subtitle">有人为你悄悄布置了一间暖融融、塞满可爱小物件的星露谷少女小屋</p>
+        <button id="enter-room-btn" class="sd-btn" type="button">🚪 推开木门进入</button>
+        <div class="welcome-tips">支持电脑键盘 / 鼠标点击寻路 / 手机触控摇杆</div>
+      </div>
+    </section>
+
+    <!-- 底部星露谷风格对话框 -->
+    <div id="dialogue-backdrop" class="hidden" role="dialog" aria-modal="true">
+      <div id="dialogue-box" class="sd-box">
+        <div class="dialogue-portrait-col">
+          <div class="dialogue-portrait-frame">
+            <img id="dialogue-avatar" src="assets/protagonist-portrait.png" alt="角色立绘" />
+          </div>
+          <div id="dialogue-speaker" class="dialogue-speaker">小Q包张哼哼</div>
+        </div>
+        <div class="dialogue-text-col">
+          <div id="dialogue-text" class="dialogue-text"></div>
+          <div id="dialogue-choices" class="dialogue-choices hidden"></div>
+          <div id="dialogue-next" class="dialogue-next">▼ 点击 / 空格继续</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中央星露谷木框弹窗 -->
+    <div id="modal-backdrop" class="hidden" role="dialog" aria-modal="true">
+      <div id="modal-card" class="sd-box">
+        <div class="modal-header">
+          <h2 id="modal-title">标题</h2>
+          <button id="modal-close-btn" class="modal-close-btn" type="button" aria-label="关闭窗口">✕</button>
+        </div>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

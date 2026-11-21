@@ -1,0 +1,11 @@
+{
+  "name": "stardew-birthday-room",
+  "version": "1.0.0",
+  "description": "星露谷像素风可交互生日小屋",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs"
+  },
+  "license": "MIT"
+}
