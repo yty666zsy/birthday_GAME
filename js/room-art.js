@@ -1279,6 +1279,64 @@ window.SB.Art = (function () {
       ctx.lineWidth = 1.5;
       ctx.strokeRect(419, 59, 8, 10);
     }
+
+    // Cozy Starry Night Mode Overlay (toggleable from HUD / Birthday Menu)
+    if (state && state.nightMode) {
+      // Starry night window skies in windowed rooms
+      const nightWindows = {
+        living: [{ x: 144, y: 20, w: 158, h: 66 }],
+        study: [{ x: 398, y: 18, w: 92, h: 50 }],
+        kitchen: [{ x: 40, y: 48, w: 56, h: 20 }],
+      }[room.id] || [];
+
+      nightWindows.forEach((nw) => {
+        ctx.save();
+        ctx.fillStyle = 'rgba(24, 30, 68, 0.72)';
+        ctx.fillRect(nw.x, nw.y, nw.w, nw.h);
+        // Crescent moon
+        if (nw.h >= 40) {
+          ctx.fillStyle = '#fff2a6';
+          ctx.beginPath();
+          ctx.arc(nw.x + nw.w - 22, nw.y + 18, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#1b224f';
+          ctx.beginPath();
+          ctx.arc(nw.x + nw.w - 19, nw.y + 16, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Twinkling pixel stars
+        for (let si = 0; si < 7; si++) {
+          const sx = nw.x + 8 + ((si * 23) % Math.max(12, nw.w - 16));
+          const sy = nw.y + 6 + ((si * 13) % Math.max(8, nw.h - 12));
+          if (Math.sin(time * 3.5 + si * 1.3) > -0.2) {
+            px(ctx, sx, sy, 2, 2, si % 2 === 0 ? '#fff7bd' : '#ffd2e6');
+          }
+        }
+        ctx.restore();
+      });
+
+      // Gentle indigo-violet evening ambiance across the room
+      ctx.fillStyle = 'rgba(18, 14, 46, 0.24)';
+      ctx.fillRect(0, 0, roomW, roomH);
+
+      // Warm golden sanctuary glow pools in the center & key cozy spots
+      const glowSpots = {
+        living: [[176, 308, 70], [304, 88, 65], [382, 86, 65]],
+        bedroom: [[336, 114, 72], [432, 160, 64], [56, 150, 56]],
+        dressing: [[256, 86, 78], [72, 290, 58]],
+        bathroom: [[192, 92, 72], [386, 286, 60]],
+        study: [[378, 96, 68], [62, 300, 68], [224, 50, 60]],
+        kitchen: [[240, 88, 72], [378, 224, 52]],
+      }[room.id] || [[roomW / 2, roomH / 2, 90]];
+
+      glowSpots.forEach(([gx, gy, gr]) => {
+        const rg = ctx.createRadialGradient(gx, gy, 4, gx, gy, gr);
+        rg.addColorStop(0, 'rgba(255, 224, 156, 0.26)');
+        rg.addColorStop(1, 'rgba(255, 200, 120, 0)');
+        ctx.fillStyle = rg;
+        ctx.fillRect(gx - gr, gy - gr, gr * 2, gr * 2);
+      });
+    }
   }
 
   function drawBalloonBasket(ctx, bx, by, time, phase) {

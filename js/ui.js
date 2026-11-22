@@ -38,6 +38,8 @@ window.SB.UI = (function () {
     studyLampOn: true,
     bathroomMirrorLed: true,
     showerRunning: false,
+    nightMode: false,
+    birthdayWish: '',
     playerActivity: null,
     pianoOpen: false,
     pcOpen: false,
@@ -648,6 +650,43 @@ window.SB.UI = (function () {
         }
       }
 
+      // Birthday Wish & Keepsake Polaroid Postcard Card
+      const wishBox = el('div', 'cake-wish-box');
+      wishBox.appendChild(el('div', 'cake-wish-title', '✨ 写下今年的生日愿望（可生成专属纪念明信片）：'));
+      const wishInput = document.createElement('input');
+      wishInput.type = 'text';
+      wishInput.className = 'cake-wish-input';
+      wishInput.maxLength = 60;
+      wishInput.placeholder = '输入你的生日愿望，或点下方快捷心愿…';
+      wishInput.value = state.birthdayWish || localStorage.getItem('stardew_birthday_wish_v1') || '';
+      wishBox.appendChild(wishInput);
+
+      const chipRow = el('div', 'cake-wish-chips');
+      (cfg.wishPresets || []).forEach((txt) => {
+        const chip = el('button', 'cake-wish-chip', txt);
+        chip.type = 'button';
+        chip.addEventListener('click', () => {
+          wishInput.value = txt;
+          audio.blip();
+        });
+        chipRow.appendChild(chip);
+      });
+      wishBox.appendChild(chipRow);
+
+      const postcardBtn = el('button', 'sd-btn', '📸 封存心愿 & 生成纪念明信片');
+      postcardBtn.type = 'button';
+      postcardBtn.addEventListener('click', () => {
+        const val = wishInput.value.trim() || (cfg.wishPresets && cfg.wishPresets[0]) || '新的一岁永远被温柔与偏爱包围！';
+        state.birthdayWish = val;
+        try {
+          localStorage.setItem('stardew_birthday_wish_v1', val);
+        } catch (_) {}
+        audio.questDone();
+        openPostcardModal(val);
+      });
+      wishBox.appendChild(postcardBtn);
+      stage.appendChild(wishBox);
+
       blowBtn.addEventListener('click', () => {
         if (!state.candlesBlown) {
           state.candlesBlown = true;
@@ -889,6 +928,37 @@ window.SB.UI = (function () {
           highlight: false,
           onClick: () => openCookingModal('recipes'),
         },
+        {
+          icon: '📸',
+          title: '许愿纪念明信片',
+          sub: state.birthdayWish ? '已封存心愿 · 查看/保存明信片' : '写下生日愿望生成拍立得 ✨',
+          highlight: true,
+          onClick: () => openPostcardModal(state.birthdayWish || localStorage.getItem('stardew_birthday_wish_v1') || ''),
+        },
+        {
+          icon: '📻',
+          title: '亲友祝福电台',
+          sub: '听听团团、lucky 与大家的祝福',
+          highlight: false,
+          onClick: () => openBlessingsModal(),
+        },
+        {
+          icon: '🫙',
+          title: '情绪夸夸罐',
+          sub: '随时抽一张被偏爱的暖心纸条 💖',
+          highlight: true,
+          onClick: () => openComfortJarModal(),
+        },
+        {
+          icon: state.nightMode ? '☀️' : '🌙',
+          title: state.nightMode ? '切回白天阳光' : '切到星空夜晚',
+          sub: state.nightMode ? '当前：浪漫星空夜灯模式' : '点亮满屋暖灯与窗外星空 ✨',
+          highlight: false,
+          onClick: () => {
+            toggleNightMode();
+            openBirthdayMenuModal();
+          },
+        },
       ];
 
       items.forEach((it) => {
@@ -909,6 +979,222 @@ window.SB.UI = (function () {
       });
 
       body.appendChild(grid);
+    });
+  }
+
+  function toggleNightMode() {
+    state.nightMode = !state.nightMode;
+    audio.blip();
+    if (els.timeModeBtn) {
+      els.timeModeBtn.textContent = state.nightMode ? '🌙 星空夜' : '☀️ 白天';
+      els.timeModeBtn.classList.toggle('night-on', state.nightMode);
+    }
+  }
+
+  function openPostcardModal(wishText) {
+    const finalWish = (wishText || '').trim() || (cfg.wishPresets && cfg.wishPresets[0]) || '新的一岁天天开心，永远被偏爱！';
+    state.birthdayWish = finalWish;
+
+    openModalFrame('📸 专属生日许愿纪念明信片', (body) => {
+      const wrap = el('div', 'postcard-wrap');
+      const canvas = document.createElement('canvas');
+      canvas.width = 760;
+      canvas.height = 500;
+      canvas.className = 'postcard-canvas';
+      wrap.appendChild(canvas);
+
+      function renderPostcard() {
+        const ctx = canvas.getContext('2d');
+        // Warm cream Polaroid background
+        const grad = ctx.createLinearGradient(0, 0, 0, 500);
+        grad.addColorStop(0, '#fff4f8');
+        grad.addColorStop(1, '#fff8eb');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 760, 500);
+
+        // Outer Stardew wood-pink frame
+        ctx.strokeStyle = '#9c5268';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(10, 10, 740, 480);
+        ctx.strokeStyle = '#ffd0df';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(20, 20, 720, 460);
+
+        // Inner night/pastel sky snapshot box
+        const sky = ctx.createLinearGradient(0, 42, 0, 315);
+        sky.addColorStop(0, state.nightMode ? '#29224d' : '#ffdbe8');
+        sky.addColorStop(1, state.nightMode ? '#52386e' : '#fff3dc');
+        ctx.fillStyle = sky;
+        ctx.fillRect(38, 40, 684, 272);
+        ctx.strokeStyle = '#c48499';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(38, 40, 684, 272);
+
+        // Soft floor rug inside snapshot
+        ctx.fillStyle = '#ffeaf2';
+        ctx.fillRect(38, 250, 684, 62);
+        ctx.fillStyle = '#f5bfd1';
+        ctx.fillRect(38, 250, 684, 5);
+
+        // Twinkling stars & hearts in postcard sky
+        const stars = [[88, 74], [160, 104], [240, 68], [520, 72], [610, 96], [670, 66], [380, 62]];
+        stars.forEach(([sx, sy], i) => {
+          ctx.fillStyle = i % 2 === 0 ? '#ffe066' : '#ff9ebb';
+          ctx.fillRect(sx - 2, sy - 6, 4, 12);
+          ctx.fillRect(sx - 6, sy - 2, 12, 4);
+        });
+
+        // Header stamp
+        ctx.fillStyle = state.nightMode ? '#fff2b0' : '#9e3656';
+        ctx.font = 'bold 20px "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`🎂 ${cfg.birthdayDate || '2026-11-20'} · ${cfg.celebrantName}的生日小屋纪念`, 380, 78);
+
+        // Draw protagonist (live dressed-up look!) + 团团 + lucky
+        const Wardrobe = window.SB.Wardrobe;
+        const girlCanvas = Wardrobe && Wardrobe.isReady && Wardrobe.isReady('front')
+          ? Wardrobe.getViewCanvas('front')
+          : null;
+
+        const pugImg = new Image();
+        pugImg.src = 'assets/pets/pug.png';
+        const catImg = new Image();
+        catImg.src = 'assets/pets/shorthair.png';
+        const girlFallback = new Image();
+        girlFallback.src = 'assets/protagonist.png';
+
+        function drawCast() {
+          // Re-paint floor strip & cast cleanly
+          ctx.fillStyle = '#ffeaf2';
+          ctx.fillRect(42, 255, 676, 54);
+          // Shadows
+          ctx.fillStyle = 'rgba(80, 35, 50, 0.16)';
+          [245, 380, 515].forEach((cx) => {
+            ctx.beginPath();
+            ctx.ellipse(cx, 286, 34, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          if (pugImg.complete && pugImg.naturalWidth) {
+            const ph = 92;
+            const pw = Math.round(ph * (pugImg.naturalWidth / pugImg.naturalHeight));
+            ctx.drawImage(pugImg, 245 - pw / 2, 286 - ph, pw, ph);
+          }
+          const gSrc = girlCanvas || (girlFallback.complete && girlFallback.naturalWidth ? girlFallback : null);
+          if (gSrc) {
+            const gw = gSrc.width || gSrc.naturalWidth;
+            const gh = gSrc.height || gSrc.naturalHeight;
+            const dh = 148;
+            const dw = Math.round(dh * (gw / gh));
+            ctx.drawImage(gSrc, 380 - dw / 2, 288 - dh, dw, dh);
+          }
+          if (catImg.complete && catImg.naturalWidth) {
+            const ch = 92;
+            const cw = Math.round(ch * (catImg.naturalWidth / catImg.naturalHeight));
+            ctx.drawImage(catImg, 515 - cw / 2, 286 - ch, cw, ch);
+          }
+        }
+
+        pugImg.onload = drawCast;
+        catImg.onload = drawCast;
+        girlFallback.onload = drawCast;
+        drawCast();
+
+        // Wish text block at bottom Polaroid margin
+        ctx.fillStyle = '#7a2944';
+        ctx.font = 'bold 22px "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`“ ${finalWish} ”`, 380, 368);
+
+        ctx.fillStyle = '#a65c74';
+        ctx.font = '16px "Microsoft YaHei", sans-serif';
+        ctx.fillText(`—— 许愿人：${cfg.celebrantName} · 陪伴宠物：团团 & lucky · ${cfg.senderName}献上`, 380, 412);
+
+        ctx.fillStyle = '#d47a96';
+        ctx.font = 'bold 14px "Microsoft YaHei", sans-serif';
+        ctx.fillText('✨ 愿你新的一岁，被全世界温柔和偏爱包围 ✨', 380, 450);
+      }
+
+      renderPostcard();
+
+      const actions = el('div', 'modal-footer-actions');
+      const saveBtn = el('button', 'sd-btn', '📥 保存纪念明信片 (.png)');
+      saveBtn.type = 'button';
+      saveBtn.addEventListener('click', () => {
+        try {
+          const link = document.createElement('a');
+          link.download = `${cfg.celebrantName}-生日纪念明信片.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          audio.questDone();
+        } catch (_) {}
+      });
+      const editBtn = el('button', 'sd-btn secondary', '✏️ 修改心愿');
+      editBtn.type = 'button';
+      editBtn.addEventListener('click', () => openCakeModal());
+      actions.appendChild(saveBtn);
+      actions.appendChild(editBtn);
+      wrap.appendChild(actions);
+
+      body.appendChild(wrap);
+    }, true);
+  }
+
+  function openBlessingsModal() {
+    openModalFrame('📻 亲友与宠物 · 生日祝福电台', (body) => {
+      const list = cfg.friendsBlessings || [];
+      const intro = el('div', 'bday-menu-intro', '点击每一张电台贺卡，都能听见大家偷偷为你录好的生日祝福哦～');
+      body.appendChild(intro);
+
+      const stack = el('div', 'blessings-stack');
+      list.forEach((b) => {
+        const card = el('button', `blessing-card ${b.featured ? 'featured' : ''}`);
+        card.type = 'button';
+        card.innerHTML = `
+          <div class="blessing-head">
+            <span class="blessing-avatar">${b.avatar || '💌'}</span>
+            <div>
+              <div class="blessing-from">${b.from}</div>
+              <div class="blessing-tag">${b.tag}</div>
+            </div>
+          </div>
+          <div class="blessing-msg">${b.message}</div>
+        `;
+        card.addEventListener('click', () => {
+          audio.junimo();
+          card.classList.add('played');
+        });
+        stack.appendChild(card);
+      });
+      body.appendChild(stack);
+    });
+  }
+
+  function openComfortJarModal() {
+    const notes = cfg.comfortNotes || ['💖 你今天也是世界上最棒的小女孩！'];
+    let idx = Math.floor(Math.random() * notes.length);
+
+    openModalFrame('🫙 专属情绪夸夸罐 · 被偏爱时刻', (body) => {
+      const wrap = el('div', 'comfort-jar-wrap');
+      const jarIcon = el('div', 'comfort-jar-icon', '🫙✨');
+      const slip = el('div', 'comfort-slip');
+      slip.textContent = notes[idx];
+
+      const drawBtn = el('button', 'sd-btn', '✨ 再抽一张暖心纸条');
+      drawBtn.type = 'button';
+      drawBtn.addEventListener('click', () => {
+        idx = (idx + 1) % notes.length;
+        slip.classList.remove('pop');
+        void slip.offsetWidth;
+        slip.classList.add('pop');
+        slip.textContent = notes[idx];
+        audio.junimo();
+      });
+
+      wrap.appendChild(jarIcon);
+      wrap.appendChild(slip);
+      wrap.appendChild(drawBtn);
+      body.appendChild(wrap);
     });
   }
 
@@ -4026,6 +4312,7 @@ window.SB.UI = (function () {
     els.poseBtn = document.getElementById('pose-btn');
     els.poseMenu = document.getElementById('pose-menu');
     els.birthdayMenuBtn = document.getElementById('birthday-menu-btn');
+    els.timeModeBtn = document.getElementById('time-mode-btn');
     els.questBtn = document.getElementById('hud-quest-btn');
     els.questBtnLabel = document.getElementById('hud-quest-label');
     els.musicBtn = document.getElementById('hud-music-btn');
@@ -4077,6 +4364,9 @@ window.SB.UI = (function () {
     }
     if (els.birthdayMenuBtn) {
       els.birthdayMenuBtn.addEventListener('click', () => openBirthdayMenuModal());
+    }
+    if (els.timeModeBtn) {
+      els.timeModeBtn.addEventListener('click', () => toggleNightMode());
     }
     els.questBtn.addEventListener('click', () => openQuestModal());
     els.musicBtn.addEventListener('click', () => {
