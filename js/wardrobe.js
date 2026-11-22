@@ -817,9 +817,16 @@ window.SB.Wardrobe = (function () {
         const hb = getTintedHairSource(`assets/wardrobe/hair_${look.hair}_front_back.png`, look.hairColor, 'hair');
         if (hb) ctx.drawImage(hb, 0, 0);
       }
+      // Natural chibi neck behind collar & head so no outfit ever looks neckless
+      ctx.fillStyle = '#fce0ce';
+      ctx.strokeStyle = '#784438';
+      ctx.lineWidth = 2;
+      ctx.fillRect(F_CX - 8, 128, 16, 18);
+      ctx.strokeRect(F_CX - 8, 128, 16, 18);
+
       const bodyRec = loadImg(`assets/wardrobe/outfit_${look.outfit}_front.png`);
       if (bodyRec.ready) {
-        ctx.drawImage(bodyRec.img, 0, -2);
+        ctx.drawImage(bodyRec.img, 0, 1);
         // Subtle chin-to-collar shadow so head blends seamlessly into every outfit
         ctx.fillStyle = 'rgba(115, 68, 56, 0.16)';
         ctx.beginPath();
@@ -840,19 +847,26 @@ window.SB.Wardrobe = (function () {
       readyFlags[viewName] = Boolean(bodyRec.ready && head);
     } else if (viewName === 'back') {
       const bodyRec = loadImg(`assets/wardrobe/outfit_${look.outfit}_back.png`);
-      if (bodyRec.ready) ctx.drawImage(bodyRec.img, 0, -2);
+      if (bodyRec.ready) ctx.drawImage(bodyRec.img, 0, 0);
       const hb = getTintedHairSource(`assets/wardrobe/hair_${look.hair}_back.png`, look.hairColor, 'hair');
       if (hb) ctx.drawImage(hb, 0, 0);
       drawHeadwearLayer(ctx, 'back', look);
       readyFlags.back = Boolean(bodyRec.ready && hb);
     } else if (viewName === 'side') {
+      // Natural side-view chibi neck connecting chin (x ~ 56..72) to collar
+      ctx.fillStyle = '#fce0ce';
+      ctx.strokeStyle = '#784438';
+      ctx.lineWidth = 2;
+      ctx.fillRect(56, 122, 16, 20);
+      ctx.strokeRect(56, 122, 16, 20);
+
       const bodyRec = loadImg(`assets/wardrobe/outfit_${look.outfit}_side.png`);
       const sdx = SIDE_OUTFIT_DX[look.outfit] || 0;
       if (bodyRec.ready) {
-        ctx.drawImage(bodyRec.img, sdx, -2);
+        ctx.drawImage(bodyRec.img, sdx, 3);
         ctx.fillStyle = 'rgba(115, 68, 56, 0.16)';
         ctx.beginPath();
-        ctx.ellipse(70, 136, 12, 4.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(64, 134, 11, 4, 0, 0, Math.PI * 2);
         ctx.fill();
       }
       const hs = getTintedHairSource(`assets/wardrobe/hair_${look.hair}_side.png`, look.hairColor, 'side');
