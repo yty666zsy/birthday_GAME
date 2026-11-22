@@ -805,10 +805,10 @@ window.SB.Wardrobe = (function () {
 
     const SIDE_OUTFIT_DX = {
       classic: 0,
-      bunny_pajama: -14,
-      cream_bear: -10,
-      lavender_puff: -10,
-      strawberry_princess: -16,
+      bunny_pajama: 0,
+      cream_bear: 0,
+      lavender_puff: 0,
+      strawberry_princess: 0,
     };
 
     const hMeta = HAIRSTYLES.find((h) => h.id === look.hair) || HAIRSTYLES[0];
