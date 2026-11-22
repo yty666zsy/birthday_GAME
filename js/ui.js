@@ -357,6 +357,9 @@ window.SB.UI = (function () {
     if (state.pianoOpen && audio && audio.setBgmDuck) {
       audio.setBgmDuck(false);
     }
+    if (audio && audio.stopVoiceWish) {
+      audio.stopVoiceWish();
+    }
     state.pianoOpen = false;
     state.pcOpen = false;
     state.wardrobeOpen = false;
@@ -950,6 +953,13 @@ window.SB.UI = (function () {
           onClick: () => openComfortJarModal(),
         },
         {
+          icon: '⏳',
+          title: '时光胶囊信件',
+          sub: '写一封信给明年今天的自己 💌',
+          highlight: false,
+          onClick: () => openTimeCapsuleModal(),
+        },
+        {
           icon: state.nightMode ? '☀️' : '🌙',
           title: state.nightMode ? '切回白天阳光' : '切到星空夜晚',
           sub: state.nightMode ? '当前：浪漫星空夜灯模式' : '点亮满屋暖灯与窗外星空 ✨',
@@ -1142,8 +1152,55 @@ window.SB.UI = (function () {
 
   function openBlessingsModal() {
     openModalFrame('📻 亲友与宠物 · 生日祝福电台', (body) => {
+      const vw = cfg.voiceWish || {};
+      let voicePlaying = false;
+
+      // Featured Voice Message Easter Egg Card
+      const voiceBox = el('div', 'voice-wish-card');
+      const vHead = el('div', 'voice-wish-head');
+      vHead.innerHTML = `
+        <div>
+          <div class="voice-wish-title">${vw.title || '🎙️ 专属生日语音留言'}</div>
+          <div class="voice-wish-sub">${vw.subtitle || '点击播放偷偷录给你的生日悄悄话～'}</div>
+        </div>
+      `;
+      const playVoiceBtn = el('button', 'sd-btn', '▶ 播放语音留言');
+      playVoiceBtn.type = 'button';
+      vHead.appendChild(playVoiceBtn);
+      voiceBox.appendChild(vHead);
+
+      const wave = el('div', 'voice-wave');
+      for (let i = 0; i < 12; i++) {
+        wave.appendChild(el('span', 'voice-bar'));
+      }
+      voiceBox.appendChild(wave);
+
+      const transcript = el('div', 'voice-transcript hidden', vw.transcript || '');
+      voiceBox.appendChild(transcript);
+
+      playVoiceBtn.addEventListener('click', () => {
+        if (voicePlaying) {
+          audio.stopVoiceWish();
+          voicePlaying = false;
+          voiceBox.classList.remove('playing');
+          playVoiceBtn.textContent = '▶ 播放语音留言';
+          return;
+        }
+        voicePlaying = true;
+        voiceBox.classList.add('playing');
+        transcript.classList.remove('hidden');
+        playVoiceBtn.textContent = '⏹ 停止播放';
+        audio.playVoiceWish(vw.audioSrc, () => {
+          voicePlaying = false;
+          voiceBox.classList.remove('playing');
+          playVoiceBtn.textContent = '▶ 再听一遍';
+        });
+      });
+
+      body.appendChild(voiceBox);
+
       const list = cfg.friendsBlessings || [];
-      const intro = el('div', 'bday-menu-intro', '点击每一张电台贺卡，都能听见大家偷偷为你录好的生日祝福哦～');
+      const intro = el('div', 'bday-menu-intro', '点击下方每一张电台贺卡，也能收听大家写给你的祝福哦～');
       body.appendChild(intro);
 
       const stack = el('div', 'blessings-stack');
@@ -1167,6 +1224,126 @@ window.SB.UI = (function () {
         stack.appendChild(card);
       });
       body.appendChild(stack);
+    });
+  }
+
+  function openTimeCapsuleModal() {
+    const STORAGE_KEY = 'stardew_time_capsule_v1';
+    let saved = { text: '', savedAt: '' };
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) saved = JSON.parse(raw) || saved;
+    } catch (_) {}
+
+    openModalFrame('⏳ 时光胶囊 · 写给明年今天的一封信', (body) => {
+      const wrap = el('div', 'capsule-wrap');
+      const banner = el(
+        'div',
+        'bday-menu-intro',
+        `写下想对「明年今日（2027-11-20）」的 ${cfg.celebrantName} 说的话吧！封存后可以保存成带火漆印章的纪念信纸图片～`
+      );
+      wrap.appendChild(banner);
+
+      const area = document.createElement('textarea');
+      area.className = 'capsule-textarea';
+      area.rows = 5;
+      area.maxLength = 260;
+      area.placeholder = '比如：明年的小Q包也要每天开开心心、身体健康、和团团 lucky 一起继续闪闪发光呀！';
+      area.value = saved.text || '';
+      wrap.appendChild(area);
+
+      const sealStatus = el(
+        'div',
+        'capsule-status',
+        saved.text ? `💌 已封存于 ${saved.savedAt || '今天'}（可随时修改或导出图片）` : '🕯️ 尚未封存 · 写好后点击下方红色火漆封存'
+      );
+      wrap.appendChild(sealStatus);
+
+      const actions = el('div', 'modal-footer-actions');
+      const sealBtn = el('button', 'sd-btn red', '💌 火漆封存时光胶囊');
+      sealBtn.type = 'button';
+      const exportBtn = el('button', 'sd-btn', '📥 导出胶囊信纸 (.png)');
+      exportBtn.type = 'button';
+
+      sealBtn.addEventListener('click', () => {
+        const txt = area.value.trim();
+        if (!txt) {
+          area.focus();
+          return;
+        }
+        const stamp = new Date().toISOString().slice(0, 10);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ text: txt, savedAt: stamp }));
+        } catch (_) {}
+        sealStatus.textContent = `✨ 已用玫瑰金火漆封存（${stamp} → 2027-11-20 开启）`;
+        audio.questDone();
+      });
+
+      exportBtn.addEventListener('click', () => {
+        const txt = area.value.trim() || '明年的今天，也请继续被温柔和偏爱包围吧！';
+        const c = document.createElement('canvas');
+        c.width = 720;
+        c.height = 460;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff6ea';
+        ctx.fillRect(0, 0, 720, 460);
+        ctx.strokeStyle = '#9c5268';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(12, 12, 696, 436);
+        ctx.strokeStyle = '#f0b2c6';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(24, 24, 672, 412);
+
+        ctx.fillStyle = '#8f2d50';
+        ctx.font = 'bold 24px "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`⏳ 时光胶囊 · 寄给 2027-11-20 的 ${cfg.celebrantName}`, 360, 74);
+
+        ctx.fillStyle = '#b8768c';
+        ctx.font = '15px "Microsoft YaHei", sans-serif';
+        ctx.fillText(`封存日期：${cfg.birthdayDate || '2026-11-20'}`, 360, 104);
+
+        // Word-wrap message lines cleanly
+        ctx.fillStyle = '#5b2c0d';
+        ctx.font = '20px "Microsoft YaHei", sans-serif';
+        const chars = Array.from(txt);
+        const lines = [];
+        let cur = '';
+        for (const ch of chars) {
+          if (ch === '\n' || cur.length >= 24) {
+            lines.push(cur);
+            cur = ch === '\n' ? '' : ch;
+          } else {
+            cur += ch;
+          }
+        }
+        if (cur) lines.push(cur);
+        lines.slice(0, 7).forEach((ln, idx) => {
+          ctx.fillText(ln, 360, 165 + idx * 34);
+        });
+
+        // Red wax seal stamp
+        ctx.fillStyle = '#d9485f';
+        ctx.beginPath();
+        ctx.arc(610, 376, 30, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffe58f';
+        ctx.font = 'bold 22px "Microsoft YaHei", sans-serif';
+        ctx.fillText('♥', 610, 384);
+
+        try {
+          const link = document.createElement('a');
+          link.download = `${cfg.celebrantName}-时光胶囊信件.png`;
+          link.href = c.toDataURL('image/png');
+          link.click();
+          audio.questDone();
+        } catch (_) {}
+      });
+
+      actions.appendChild(sealBtn);
+      actions.appendChild(exportBtn);
+      wrap.appendChild(actions);
+      body.appendChild(wrap);
     });
   }
 
@@ -3750,11 +3927,18 @@ window.SB.UI = (function () {
           '顶天立地的法式拱门奶油书架！排满了粉嫩精装童话书、手账集、玻璃雪花球，还有排排坐的兔兔和小熊盲盒手办～',
           [
             {
-              label: '📚 抽一本童话手账翻看',
+              label: '📚 站着捧读童话手账',
               primary: true,
               onSelect: () => {
                 audio.blip();
                 particles.spawnHearts(96, 114, 5);
+                callbacks.onStartActivity?.({
+                  type: 'read_book',
+                  label: '📖 正站在书架前认真翻看童话手账…',
+                  x: 108,
+                  y: 176,
+                  dir: 'up',
+                });
                 showDialogue(
                   cfg.celebrantName,
                   '翻开夹着干花书签的《星露谷秋日童话》，书页里还偷偷藏着一张写着“小Q包天天开心”的小纸条呢！',
@@ -4054,11 +4238,18 @@ window.SB.UI = (function () {
             `盘子里盛着刚出锅的【${dish.icon} ${dish.name}】（${starsStr} · 美味度 ${dish.score}）！热气腾腾的，好香呀～`,
             [
               {
-                label: '🥢 夹一筷子自己品尝',
+                label: '🥢 端起筷子原地开吃！',
                 primary: true,
                 onSelect: () => {
                   audio.junimo();
                   particles.spawnHearts(236, 310, 8);
+                  callbacks.onStartActivity?.({
+                    type: 'eat_meal',
+                    label: `🍽️ 正在香喷喷地品尝【${dish.name}】…`,
+                    x: 236,
+                    y: 300,
+                    dir: 'down',
+                  });
                   showDialogue(cfg.celebrantName, dish.tasteLine, 'assets/protagonist-portrait.png');
                 },
               },
@@ -4141,9 +4332,25 @@ window.SB.UI = (function () {
       case 'fireplace':
         audio.open();
         particles.spawnHearts(382, 74, 4);
-        showDialogue(
+        showDialogueChoices(
           cfg.celebrantName,
           cfg.extraDialogues.fireplace.text,
+          [
+            {
+              label: '🔥 蹲在壁炉前烤火取暖',
+              primary: true,
+              onSelect: () => {
+                callbacks.onStartActivity?.({
+                  type: 'warm_fire',
+                  label: '🔥 正在法式奶油壁炉前暖呼呼地烤火…',
+                  x: 382,
+                  y: 138,
+                  dir: 'up',
+                });
+              },
+            },
+            { label: '先逛逛客厅', primary: false },
+          ],
           'assets/protagonist-portrait.png'
         );
         break;
@@ -4213,7 +4420,13 @@ window.SB.UI = (function () {
                 audio.bubble();
                 particles.spawnSteam(432, 324, 4);
                 particles.spawnHearts(432, 336, 5);
-                callbacks.onTriggerEmote?.('happy');
+                callbacks.onStartActivity?.({
+                  type: 'sip_coffee',
+                  label: '☕ 正在奶油餐边柜旁小口喝冰草莓拿铁…',
+                  x: 372,
+                  y: 336,
+                  dir: 'right',
+                });
                 showDialogue(
                   cfg.celebrantName,
                   '粉粉的咖啡机「滋啦」打好绵密奶泡，加了两颗大草莓的冰拿铁超清甜，喝一口元气满满～',

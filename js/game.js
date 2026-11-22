@@ -153,22 +153,35 @@ window.SB = window.SB || {};
 
   function triggerEmote(type) {
     if (player.activity) return;
-    const durations = { wave: 1.8, spin: 1.6, love: 1.6, dance: 2.6, happy: 0.75 };
+    const durations = {
+      wave: 1.8,
+      spin: 1.6,
+      love: 1.6,
+      dance: 2.6,
+      hug: 2.0,
+      cheer: 2.0,
+      shy: 1.8,
+      nap: 2.8,
+      happy: 0.75,
+    };
     const dur = durations[type] || 1.4;
     player.emote = { type, elapsed: 0, duration: dur, noteTimer: 0 };
 
-    if (type === 'love') {
+    if (type === 'love' || type === 'hug') {
       Audio.open();
       Particles.spawnHearts(player.x, player.y - 46, 6);
-    } else if (type === 'wave') {
+    } else if (type === 'wave' || type === 'shy') {
       Audio.blip();
-      Particles.spawnHearts(player.x + 12, player.y - 44, 2);
-    } else if (type === 'spin') {
+      Particles.spawnHearts(player.x + 12, player.y - 44, 3);
+    } else if (type === 'spin' || type === 'cheer') {
       Audio.open();
-      Particles.spawnConfetti(player.x, player.y - 28, 12);
+      Particles.spawnConfetti(player.x, player.y - 28, 16);
     } else if (type === 'dance') {
       Audio.junimo();
       Particles.spawnMusicNote(player.x, player.y - 48);
+    } else if (type === 'nap') {
+      Audio.blip();
+      Particles.spawnZzz(player.x + 10, player.y - 46);
     }
   }
 
@@ -373,6 +386,22 @@ window.SB = window.SB || {};
           } else if (player.activity.type === 'cook') {
             activityParticleTimer = 0.85;
             Particles.spawnSteam(240, 102, 2);
+          } else if (player.activity.type === 'warm_fire') {
+            activityParticleTimer = 1.2;
+            Particles.spawnHearts(player.x, player.y - 44, 2);
+          } else if (player.activity.type === 'sip_coffee') {
+            activityParticleTimer = 1.3;
+            Particles.spawnSteam(player.x, player.y - 36, 1);
+            Particles.spawnHearts(player.x, player.y - 44, 1);
+          } else if (player.activity.type === 'eat_meal') {
+            activityParticleTimer = 1.1;
+            Particles.spawnHearts(player.x, player.y - 42, 2);
+          } else if (player.activity.type === 'read_book') {
+            activityParticleTimer = 1.6;
+            Particles.spawnHearts(player.x, player.y - 44, 1);
+          } else if (player.activity.type === 'cheer_cake') {
+            activityParticleTimer = 1.2;
+            Particles.spawnConfetti(player.x, player.y - 38, 6);
           } else if (player.activity.type === 'play_piano') {
             activityParticleTimer = 1.1;
             Particles.spawnMusicNote(240, 76);
@@ -527,7 +556,7 @@ window.SB = window.SB || {};
     if (player.emote && player.emote.type === 'spin') {
       const seq = ['down', 'left', 'up', 'right'];
       effDir = seq[Math.floor(player.emote.elapsed * 5.2) % 4];
-    } else if (player.emote && (player.emote.type === 'wave' || player.emote.type === 'love' || player.emote.type === 'happy')) {
+    } else if (player.emote && (player.emote.type === 'wave' || player.emote.type === 'love' || player.emote.type === 'happy' || player.emote.type === 'hug' || player.emote.type === 'cheer' || player.emote.type === 'shy')) {
       effDir = 'down';
     } else if (player.emote && player.emote.type === 'dance') {
       const seq = ['left', 'down', 'right', 'down'];
@@ -537,7 +566,7 @@ window.SB = window.SB || {};
     // Select view key + live composited Wardrobe canvas (with raw sprite fallback)
     let viewName = 'front';
     let flipX = false;
-    if (isSleep || isBath || isShower) {
+    if (isSleep || isBath || isShower || (player.emote && player.emote.type === 'nap')) {
       viewName = 'sleep';
     } else if (effDir === 'up') {
       viewName = 'back';
@@ -568,7 +597,7 @@ window.SB = window.SB || {};
     let drawW;
     let yDrawOff;
     if (useWardrobe) {
-      drawH = (isSleep || isBath) ? 56 : (isSeated || isShower || isWash) ? 60 : 64;
+      drawH = (isSleep || isBath) ? 58 : (isSeated || isShower || isWash) ? 63 : 67;
       drawW = Math.round(drawH * (drawSource.width / drawSource.height));
       yDrawOff = -drawH + 4;
     } else {
@@ -585,9 +614,15 @@ window.SB = window.SB || {};
     if (isSleep || isBath) {
       bounce = Math.sin(time * 2.1) * 0.7;
       tilt = isBath ? 0 : -0.05;
-    } else if (isShower || isWash || (act && (act.type === 'cook' || act.type === 'wash_veggies'))) {
-      bounce = Math.abs(Math.sin(time * 5.2)) * 1.4;
-      tilt = Math.sin(time * 4.2) * 0.05;
+    } else if (isShower || isWash || (act && (act.type === 'cook' || act.type === 'wash_veggies' || act.type === 'eat_meal'))) {
+      bounce = Math.abs(Math.sin(time * 5.2)) * 1.6;
+      tilt = Math.sin(time * 4.2) * 0.055;
+    } else if (act && (act.type === 'warm_fire' || act.type === 'sip_coffee' || act.type === 'read_book')) {
+      bounce = Math.sin(time * 2.8) * 1.1;
+      tilt = Math.sin(time * 2.0) * 0.04;
+    } else if (act && act.type === 'cheer_cake') {
+      bounce = Math.abs(Math.sin(time * 7.2)) * 5.5;
+      tilt = Math.sin(time * 5.5) * 0.06;
     } else if (isPiano) {
       bounce = Math.abs(Math.sin(time * 5.2)) * 1.6;
       tilt = Math.sin(time * 4.5) * 0.075;
@@ -604,11 +639,17 @@ window.SB = window.SB || {};
       scaleY = 1 - Math.abs(Math.sin(player.walkPhase)) * 0.04;
     } else if (player.emote) {
       const e = player.emote;
-      if (e.type === 'happy' || e.type === 'love') {
+      if (e.type === 'happy' || e.type === 'love' || e.type === 'cheer') {
         bounce = Math.abs(Math.sin(e.elapsed * 9.5)) * 9;
-      } else if (e.type === 'wave') {
+      } else if (e.type === 'wave' || e.type === 'hug') {
         bounce = Math.abs(Math.sin(e.elapsed * 7)) * 4;
         tilt = Math.sin(e.elapsed * 10) * 0.09;
+      } else if (e.type === 'shy') {
+        bounce = Math.sin(e.elapsed * 5) * 1.8;
+        tilt = Math.sin(e.elapsed * 7) * 0.07;
+      } else if (e.type === 'nap') {
+        bounce = Math.sin(e.elapsed * 2.4) * 1.0;
+        tilt = -0.04;
       } else if (e.type === 'dance') {
         bounce = Math.abs(Math.sin(e.elapsed * 8.5)) * 5.5;
         tilt = Math.sin(e.elapsed * 8.5) * 0.09;
@@ -638,10 +679,28 @@ window.SB = window.SB || {};
       Art.drawBedCoverOverlay(renderCtx, time);
     } else if (isToilet) {
       drawEmoteTag(renderCtx, px, py - 60, '✨');
+    } else if (act) {
+      const actTags = {
+        warm_fire: '🔥',
+        sip_coffee: '☕',
+        eat_meal: '🍽️',
+        read_book: '📖',
+        cheer_cake: '🎂',
+        cook: '🍳',
+        wash_veggies: '🥬',
+        sit_study: '🎨',
+      };
+      if (actTags[act.type]) {
+        drawEmoteTag(renderCtx, px, py - 66 - bounce, actTags[act.type]);
+      }
     } else if (player.emote) {
       if (player.emote.type === 'wave') drawEmoteTag(renderCtx, px, py - 66 - bounce, 'Hi~');
       else if (player.emote.type === 'love') drawEmoteTag(renderCtx, px, py - 66 - bounce, '♥');
       else if (player.emote.type === 'dance') drawEmoteTag(renderCtx, px, py - 66 - bounce, '♪');
+      else if (player.emote.type === 'hug') drawEmoteTag(renderCtx, px, py - 66 - bounce, '抱抱♥');
+      else if (player.emote.type === 'cheer') drawEmoteTag(renderCtx, px, py - 66 - bounce, 'Yay!✨');
+      else if (player.emote.type === 'shy') drawEmoteTag(renderCtx, px, py - 66 - bounce, '⁄(⁄⁄•⁄ω⁄•⁄⁄)⁄');
+      else if (player.emote.type === 'nap') drawEmoteTag(renderCtx, px, py - 64 - bounce, 'Zzz');
     }
   }
 

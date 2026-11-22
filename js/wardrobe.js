@@ -803,6 +803,14 @@ window.SB.Wardrobe = (function () {
       }
     }
 
+    const SIDE_OUTFIT_DX = {
+      classic: 0,
+      bunny_pajama: -14,
+      cream_bear: -10,
+      lavender_puff: -10,
+      strawberry_princess: -16,
+    };
+
     const hMeta = HAIRSTYLES.find((h) => h.id === look.hair) || HAIRSTYLES[0];
     if (viewName === 'front' || viewName === 'sleep') {
       if (hMeta.hasBackLayer) {
@@ -810,7 +818,14 @@ window.SB.Wardrobe = (function () {
         if (hb) ctx.drawImage(hb, 0, 0);
       }
       const bodyRec = loadImg(`assets/wardrobe/outfit_${look.outfit}_front.png`);
-      if (bodyRec.ready) ctx.drawImage(bodyRec.img, 0, 0);
+      if (bodyRec.ready) {
+        ctx.drawImage(bodyRec.img, 0, -2);
+        // Subtle chin-to-collar shadow so head blends seamlessly into every outfit
+        ctx.fillStyle = 'rgba(115, 68, 56, 0.16)';
+        ctx.beginPath();
+        ctx.ellipse(F_CX, 141, 14, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       const head = getTintedHairSource(`assets/wardrobe/hair_${look.hair}_front_head.png`, look.hairColor, 'front_head');
       if (head) ctx.drawImage(head, 0, 0);
@@ -825,14 +840,21 @@ window.SB.Wardrobe = (function () {
       readyFlags[viewName] = Boolean(bodyRec.ready && head);
     } else if (viewName === 'back') {
       const bodyRec = loadImg(`assets/wardrobe/outfit_${look.outfit}_back.png`);
-      if (bodyRec.ready) ctx.drawImage(bodyRec.img, 0, 0);
+      if (bodyRec.ready) ctx.drawImage(bodyRec.img, 0, -2);
       const hb = getTintedHairSource(`assets/wardrobe/hair_${look.hair}_back.png`, look.hairColor, 'hair');
       if (hb) ctx.drawImage(hb, 0, 0);
       drawHeadwearLayer(ctx, 'back', look);
       readyFlags.back = Boolean(bodyRec.ready && hb);
     } else if (viewName === 'side') {
       const bodyRec = loadImg(`assets/wardrobe/outfit_${look.outfit}_side.png`);
-      if (bodyRec.ready) ctx.drawImage(bodyRec.img, 0, 0);
+      const sdx = SIDE_OUTFIT_DX[look.outfit] || 0;
+      if (bodyRec.ready) {
+        ctx.drawImage(bodyRec.img, sdx, -2);
+        ctx.fillStyle = 'rgba(115, 68, 56, 0.16)';
+        ctx.beginPath();
+        ctx.ellipse(70, 136, 12, 4.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
       const hs = getTintedHairSource(`assets/wardrobe/hair_${look.hair}_side.png`, look.hairColor, 'side');
       if (hs) ctx.drawImage(hs, 0, 0);
       drawMakeupLayer(ctx, 'side', look);

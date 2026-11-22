@@ -2879,3 +2879,106 @@ button {
   0% { transform: scale(0.95); opacity: 0.5; }
   100% { transform: scale(1); opacity: 1; }
 }
+
+
+/* ==================== Voice Wish Player & Time Capsule ==================== */
+.voice-wish-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff1f6 0%, #ffe6ef 100%);
+  border: 2.5px solid #e66b93;
+}
+
+.voice-wish-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.voice-wish-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #7a2944;
+}
+
+.voice-wish-sub {
+  font-size: 12px;
+  color: #9e4c68;
+  margin-top: 2px;
+}
+
+.voice-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 22px;
+  padding: 2px 4px;
+}
+
+.voice-bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: #f09ab8;
+  transition: height 0.15s ease;
+}
+
+.voice-wish-card.playing .voice-bar {
+  background: #e6497b;
+  animation: voiceWave 0.65s infinite ease-in-out alternate;
+}
+
+.voice-wish-card.playing .voice-bar:nth-child(2n) { animation-delay: 0.12s; }
+.voice-wish-card.playing .voice-bar:nth-child(3n) { animation-delay: 0.24s; }
+.voice-wish-card.playing .voice-bar:nth-child(5n) { animation-delay: 0.36s; }
+
+@keyframes voiceWave {
+  from { height: 5px; }
+  to { height: 22px; }
+}
+
+.voice-transcript {
+  font-size: 13px;
+  line-height: 1.65;
+  color: #5b2c0d;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  padding: 9px 11px;
+  border: 1.5px dashed #e68aa8;
+}
+
+.capsule-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.capsule-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2.5px solid #d48ca3;
+  background: #fffdf8;
+  color: #5b2c0d;
+  font-size: 14px;
+  line-height: 1.65;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.capsule-status {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8f2d50;
+  background: #fff2f6;
+  padding: 7px 11px;
+  border-radius: 8px;
+  border: 1.5px solid #f0b2c6;
+}

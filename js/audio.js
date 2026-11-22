@@ -432,6 +432,77 @@ window.SB.Audio = (function () {
     });
   }
 
+  let voiceAudio = null;
+  let voiceFallbackTimer = null;
+
+  function stopVoiceWish() {
+    if (voiceFallbackTimer) {
+      clearTimeout(voiceFallbackTimer);
+      voiceFallbackTimer = null;
+    }
+    if (voiceAudio) {
+      try {
+        voiceAudio.pause();
+        voiceAudio.currentTime = 0;
+      } catch (_) {}
+      voiceAudio = null;
+    }
+    setBgmDuck(false);
+  }
+
+  function playVoiceWish(src, onEnded) {
+    stopVoiceWish();
+    ensureContext();
+    setBgmDuck(true);
+
+    function playFallbackChime() {
+      const notes = [
+        [523.25, 0], [659.25, 0.32], [783.99, 0.64], [1046.5, 0.96],
+        [987.77, 1.45], [783.99, 1.78], [659.25, 2.15], [523.25, 2.55],
+        [587.33, 3.05], [659.25, 3.4], [523.25, 3.8],
+      ];
+      notes.forEach(([f, d]) => {
+        playTone(f, 0.42, 'sine', 0.15, d);
+        playTone(f * 2, 0.2, 'triangle', 0.04, d + 0.02);
+      });
+      voiceFallbackTimer = setTimeout(() => {
+        setBgmDuck(false);
+        if (onEnded) onEnded('fallback');
+      }, 4300);
+    }
+
+    if (!src) {
+      playFallbackChime();
+      return;
+    }
+    try {
+      const a = new Audio(src);
+      a.volume = muted ? 0 : Math.min(1, volume * 1.15);
+      voiceAudio = a;
+      let settled = false;
+      a.addEventListener('ended', () => {
+        if (settled) return;
+        settled = true;
+        setBgmDuck(false);
+        if (onEnded) onEnded('audio');
+      });
+      a.addEventListener('error', () => {
+        if (settled) return;
+        settled = true;
+        voiceAudio = null;
+        playFallbackChime();
+      });
+      a.play().catch(() => {
+        if (settled) return;
+        settled = true;
+        voiceAudio = null;
+        playFallbackChime();
+      });
+    } catch (_) {
+      playFallbackChime();
+    }
+  }
+
   return {
     TRACKS,
     unlock,
@@ -461,6 +532,8 @@ window.SB.Audio = (function () {
     sizzle,
     chop,
     dishDone,
+    playVoiceWish,
+    stopVoiceWish,
     playPianoNote,
     keyClick,
   };
